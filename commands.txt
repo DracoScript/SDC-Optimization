@@ -1,0 +1,8 @@
+remove older output:
+rm -R ../output/ ; mkdir ../output
+
+compile and run:
+javac Alg.java ; java Alg -a GA -a SA -c 1000 -t 0.90 -l 50 -p 50 -e 10 -g 1000 -o ../output/out -r 100 --noprint
+
+plot:
+python util/plot_evol_curve.py ../output/
