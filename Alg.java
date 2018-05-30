@@ -1,9 +1,7 @@
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Scanner;
-import java.io.FileWriter;
-import java.io.PrintWriter;
-import java.io.IOException;
+import java.io.*;
 
 ///////////////////////////////////////////////////////////////////////////////
 // ------------------------------------------------------------------------- //
@@ -241,6 +239,7 @@ public class Alg {
         int filenumber = 0;
 
         // Call Algorithms
+        System.out.println("Running Algorithms...\n");
         for (int r = repeat ; r > 0 ; r--) {
 
             for (String A : algorithm) {
@@ -813,7 +812,7 @@ public class Alg {
 
         }
 
-        return days;
+        return (int)days;
     }
 
     /**
@@ -822,9 +821,246 @@ public class Alg {
     public static void PrepareCostMatrix() {
 
         // ???? to be made, test with random values
-        RandomCostMatrix(365, 99, 200);
+        List<String[][]> tle = LoadTLE();
+        if (tle == null) {
+
+            // If couldn't read TLE data from input a random cost matrix will be used
+            System.out.println("Generating Random Cost Matrix...\n");
+            RandomCostMatrix(365, 100, 200);
+
+        }
+        else {
+
+            // After reading TLE data from input the cost matrix must be generated
+            System.out.println("Generating TLE Based Cost Matrix...\n");
+            SimulateCostMatrix(365, tle);
+
+        }
+
 
     }
+
+    /**
+     * Load TLE from input
+     */
+    public static List<String[][]> LoadTLE() {
+
+        // Read input file
+        if (inputfile == null)
+            return null;
+
+        try {
+
+            // Initiate file reader
+            BufferedReader input = new BufferedReader(new FileReader(inputfile));
+
+            // Read data and store
+            List<String[][]> readData = new ArrayList<String[][]>();
+            String line = input.readLine();
+            String[][] currData = new String[2][13];
+            while (line != null && line.length() > 0) {
+
+                // Verify line number
+                switch (line.charAt(0)) {
+
+                    // First line of a TLE
+                    case '1':
+                        // Satellite Number
+                        currData[0][0] = line.substring(2, 6);
+                        // Classification (U=Unclassified)
+                        currData[0][1] = ""+line.charAt(7);
+                        // International Designator (Last two digits of launch year)
+                        currData[0][2] = line.substring(9, 10);
+                        // International Designator (Launch number of the year)
+                        currData[0][3] = line.substring(11, 13);
+                        // International Designator (Piece of the launch)
+                        currData[0][4] = line.substring(14, 16);
+                        // Epoch Year (Last two digits of year)
+                        currData[0][5] = line.substring(18, 19);
+                        // Epoch (Day of the year and fractional portion of the day)
+                        currData[0][6] = line.substring(20, 31);
+                        // First Time Derivative of the Mean Motion
+                        currData[0][7] = line.substring(33, 42);
+                        // Second Time Derivative of Mean Motion (decimal point assumed)
+                        currData[0][8] = line.substring(44, 51);
+                        // BSTAR drag term (decimal point assumed)
+                        currData[0][9] = line.substring(53, 60);
+                        // Ephemeris type
+                        currData[0][10] = ""+line.charAt(62);
+                        // Element number
+                        currData[0][11] = line.substring(64, 67);
+                        // Checksum (Modulo 10) = (Letters, blanks, periods, plus signs = 0; minus signs = 1)
+                        currData[0][12] = ""+line.charAt(68);
+                        break;
+
+                    // Second line of a TLE
+                    case '2':
+                        // Satellite Number
+                        currData[1][0] = line.substring(2, 6);
+                        // Inclination [Degrees]
+                        currData[1][1] = line.substring(8, 15);
+                        // Right Ascension of the Ascending Node [Degrees]
+                        currData[1][2] = line.substring(17, 24);
+                        // Eccentricity (decimal point assumed)
+                        currData[1][3] = line.substring(26, 32);
+                        // Argument of Perigee [Degrees]
+                        currData[1][4] = line.substring(34, 41);
+                        // Mean Anomaly [Degrees]
+                        currData[1][5] = line.substring(43, 50);
+                        // Mean Motion [Revs per day]
+                        currData[1][6] = line.substring(52, 62);
+                        // Revolution number at epoch [Revs]
+                        currData[1][7] = line.substring(63, 67);
+                        // Checksum (Modulo 10)
+                        currData[1][8] = ""+line.charAt(68);
+                        // add TLE to data and reset current data
+                        readData.add(currData);
+                        currData = new String[2][13];
+                        break;
+
+                }
+
+                // Próxima linha
+                line = input.readLine();
+
+            }
+
+            return readData;
+
+        }
+        catch (Exception e) {
+            System.err.println("Error: "+e);
+        }
+
+        return null;
+
+    }
+
+    /**
+     * Simulate Cost Matrix Function
+     */
+    public static void SimulateCostMatrix(int maxdate, List<String[][]> tle) {
+
+        // Empiric Vehicle Values
+        double forwardAccel = 0.1; // Revolutions / day²
+        double orbitalAccel = 5; // Degrees / day²
+
+        // Initiate debris information
+        double[][] debris = new double[tle.size()+1][4];
+        debris[0][0] = 0; // Inclination - Launch considered at equator line
+        debris[0][1] = 0; // Ascending Node - Since launch is at equator, there is no ascending node
+        debris[0][2] = 0; // Argument of Perigee - Launch considered at greenwich meridian
+        debris[0][3] = 0; // Mean Motion - Launch is stationary
+
+        // Read TLE data to be used in calculations
+        for (int d = 1 ; d < debris.length ; d++) {
+            debris[d][0] = Double.parseDouble(tle.get(d-1)[1][1]); // Inclination
+            debris[d][1] = Double.parseDouble(tle.get(d-1)[1][2]); // Ascending Node
+            debris[d][2] = Double.parseDouble(tle.get(d-1)[1][4]); // Argument of Perigee
+            debris[d][3] = Double.parseDouble(tle.get(d-1)[1][6]); // Mean Motion
+        }
+
+        // Compute time for orbital changes (same for every date)
+        double[][] timeLatitude = new double[debris.length][debris.length];
+        double[][] timeLongitude = new double[debris.length][debris.length];
+        for (int d1 = 0 ; d1 < debris.length ; d1++) {
+            for (int d2 = 0 ; d2 < debris.length ; d2++) {
+                // Since this matrix is simetric, there is no need to calculate repeating values
+                if (d1 <= d2) {
+                    // Step 1: Inclination Correction = Accelerate until mean inclination, then Slowdown (same as Accelerate time)
+                    timeLatitude[d1][d2] = 2 * Position2Time(Math.abs(debris[d1][0] - debris[d2][0]), orbitalAccel);
+                    // Step 2: Ascending Node Correction = Accelerate until mean ascending node, then Slowdown (same as Accelerate time)
+                    timeLongitude[d1][d2] = 2 * Position2Time(Math.abs(debris[d1][1] - debris[d2][1]), orbitalAccel);
+                }
+                else {
+                    timeLatitude[d1][d2] = timeLatitude[d2][d1];
+                    timeLongitude[d1][d2] = timeLongitude[d2][d1];
+                }
+            }
+        }
+
+        // Create maxdate cost matrices
+        C = new double[maxdate][tle.size()+1][tle.size()+1];
+        for (int d = 0 ; d < C.length ; d++) {
+            // Current position index
+            for (int c = 0 ; c < C[d].length ; c++) {
+                // Days from current position to each possible next debris
+                for (int n = 0 ; n < C[d][c].length ; n++) {
+                    if (c == n) {
+                        // If both current position and next debris are the same, forces 0 days
+                        C[d][c][n] = 0;
+                    }
+                    else {
+                        // Step 3: Motion & Position Correction = Accelerate/Slowdown to reach same speed and position (both directions are checked)
+                        double timeInOrbit = SpeedAndPostion2Time((debris[c][2] - debris[n][2]), (debris[c][3] - debris[n][3]), forwardAccel);
+                        // Step 4: Calculate simulated time cost from current to next position
+                        C[d][c][n] = Math.max(Math.max(timeLatitude[c][n], timeLongitude[c][n]), timeInOrbit);
+                    }
+                }
+            }
+        }
+
+    }
+
+    /**
+     * Uniformly Accelerated Motion - Time for Stationary to Stationary Positions Change
+     *  UAM Position Formula -> s' = s + v.t + a.t²/2
+     *                       -> t² + 2.v.t/a = 2.(s'-s)/a
+     *                       -> t² = 2.(s'-s)/a
+     *                       -> t = sqrt(2.(s'-s)/a)
+     *                       -> accelerate half the way, then slowdown the rest to keep 0 speed
+     */
+    public static double Position2Time(double position, double acceleration) {
+
+        // 2 times the time needed to accelerate to half the way, since it takes the same amount of time to slowdown
+        return  2 * Math.sqrt(position / acceleration);
+
+    }
+
+    /**
+     * Uniformly Accelerated Motion - Time for Position and Speed Changes
+     *  UAM Speed Formula -> v' = v + a.t
+     *                    -> t = (v'-v) / a
+     *  UAM Position Formula -> s' = s + v.t + a.t²/2
+     *                       -> 0 = (s-s') + v.t + a.t²/2
+     *                       -> 0 = (s-s') + (v).t + (a/2).t²
+     *                       -> t = Best Value of Bhaskara Solving for Roots
+     */
+    public static double SpeedAndPostion2Time(double position, double speed, double acceleration) {
+
+        // Compute time to change speed to match
+        double timeMotion = speed / acceleration;
+
+        // Compute position variation for that speed variations
+        double positionMotion = (speed * timeMotion) + (acceleration * (Math.pow(timeMotion, 2)) / 2) % 360;
+
+        // Compute time for starting position (after changing speed) to half way point to be reached
+        double c = (positionMotion - (position/2));
+        double delta = (Math.pow(speed, 2)) - (2 * acceleration * c); // b²-4.a.c;
+
+        // Search a delta that leads to real roots (negative delta means imaginary roots)
+        int aux = 1;
+        while (delta < 0) {
+            c += aux * 360;
+            double auxdelta = (Math.pow(speed, 2)) - (2 * acceleration * c); // b²-4.a.c;
+            if (auxdelta < delta)
+                aux *= -1;
+            delta = auxdelta;
+        }
+
+        // Compute roots
+        double root1 = (-speed + Math.sqrt(delta)) / (2 * acceleration); // (-b + sqrt(detla)) / 2a
+        double root2 = (-speed - Math.sqrt(delta)) / (2 * acceleration); // (-b - sqrt(detla)) / 2a
+
+        // Choose the best root
+        double time = Math.min(Math.abs(root1), Math.abs(root2));
+
+        // Compute the time for the second half of the position change, when speed is matched
+        time += Math.sqrt(Math.abs(position) / acceleration);
+
+        return time;
+    }
+
 
     /**
      * Random Cost Matrix Function
@@ -842,7 +1078,7 @@ public class Alg {
                     if (c == n)
                         C[d][c][n] = 0;
                     else
-                        C[d][c][n] = (int)(Math.random() * maxtransfer);
+                        C[d][c][n] = (Math.random() * maxtransfer);
                 }
             }
         }

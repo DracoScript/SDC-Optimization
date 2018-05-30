@@ -6,3 +6,6 @@ javac Alg.java ; java Alg -a GA -a SA -c 1000 -t 0.90 -l 50 -p 50 -e 10 -g 1000 
 
 plot:
 python util/plot_evol_curve.py ../output/
+
+full with input:
+rm -R ../output/ ; mkdir ../output ; javac Alg.java ; java -Xmx4000m Alg -a GA -a SA -c 1000 -t 0.90 -l 100 -p 100 -e 10 -g 1000 -i ../input/COSMOS_2251.tle -o ../output/out -r 100 --noprint ; python util/plot_evol_curve.py ../output/
