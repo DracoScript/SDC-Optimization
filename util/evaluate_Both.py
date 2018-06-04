@@ -28,9 +28,11 @@ print ''
 
 sa_gen = []
 sa_best = []
+sa_sol = []
 sa_timer = []
 ga_gen = []
 ga_best = []
+ga_sol = []
 ga_timer = []
 
 
@@ -47,6 +49,7 @@ for file_name in onlyfiles:
 
     gen = []
     best = []
+    sol = "";
     timer = []
 
     for line in data:
@@ -58,19 +61,22 @@ for file_name in onlyfiles:
             best.append(-aux[1])
         else:
             best.append(aux[1])
+        sol = aux[2]
 
     # Store in Simulated Annealing lists
     if (file_name.find('_SA.stat') > 0):
 
         sa_gen.append(gen)
         sa_best.append(best)
+        sa_sol.append(sol)
         sa_timer.append(timer)
 
-    # Store in Simulated Annealing lists
+    # Store in Genetic Algorithm lists
     elif (file_name.find('_GA.stat') > 0):
 
         ga_gen.append(gen)
         ga_best.append(best)
+        ga_sol.append(sol)
         ga_timer.append(timer)
 
 
@@ -179,12 +185,12 @@ print ''
 print '>>> RESULTS - Mission Duration (days) <<<'
 print ''
 print 'Simulated Annealing:'
-print '    Best Solution      = '+str(sa_best[sa_fit][-1])
+print '    Best Solution      = '+str(sa_best[sa_fit][-1])+" "+sa_sol[sa_fit]
 print '    Mean of Solutions  = '+str(sa_mean)+" ["+str(sa_min)+"-"+str(sa_max)+"]"
 print '    Standard Deviation = '+str(sa_std)
 print ''
 print 'Genetic Algorithm:'
-print '    Best Solution      = '+str(ga_best[ga_fit][-1])
+print '    Best Solution      = '+str(ga_best[ga_fit][-1])+" "+ga_sol[ga_fit]
 print '    Mean of Solutions  = '+str(ga_mean)+" ["+str(ga_min)+"-"+str(ga_max)+"]"
 print '    Standard Deviation = '+str(ga_std)
 print ''

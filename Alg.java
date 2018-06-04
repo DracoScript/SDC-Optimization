@@ -472,8 +472,12 @@ public class Alg {
             }
 
             // Output
-            if (outputfile != null)
-                outprint.add(generation+" "+Kb+" "+Ks+" "+(System.currentTimeMillis()-timer));
+            if (loopcount == 0 && outputfile != null) {
+                String data = new String(generation+" "+Kb+" [");
+                for (int i : Best)
+                    data += i+",";
+                outprint.add(data+"] "+(System.currentTimeMillis()-timer));
+            }
 
         // Step 12: Stop condition if maximum number of generations reached or best is the ideal solution
         } while (generation < G || Kb <= 0);
@@ -623,8 +627,12 @@ public class Alg {
             }
 
             // Output
-            if (outputfile != null)
-                outprint.add(generation+" "+Kb+" "+Ks+" "+(System.currentTimeMillis()-timer));
+            if (outputfile != null) {
+                String data = new String(generation+" "+Kb+" [");
+                for (int i : Best)
+                    data += i+",";
+                outprint.add(data+"] "+(System.currentTimeMillis()-timer));
+            }
 
         // Step 16: Stop condition if maximum number of generations reached or best is the ideal solution
         } while (generation < G || Kb <= 0);
@@ -709,35 +717,54 @@ public class Alg {
         for (int i = 0 ; i < Pa.size() ; i++) {
 
             // Input values are added based on crossing point
-            int Ca = Pa.get(i);
-            int Cb = Pb.get(i);
+            if (i < cross) {
+
+                // Add parent values
+                Children.get(0).add(Pa.get(i));
+                Children.get(1).add(Pb.get(i));
+
+            }
             if (i >= cross) {
-                Ca = Pb.get(i);
-                Cb = Pa.get(i);
-            }
 
-            // Add value to children
-            Children.get(0).add(Ca);
-            Children.get(1).add(Cb);
+                int Ca = Pb.get(i);
+                int Cb = Pa.get(i);
 
-            // Verify an solve repeating values
-            if (Children.get(0).contains(Ca)) {
-                for (int j = 0 ; j < i ; j++) {
-                    if (Children.get(0).get(j) == Ca) {
-                        Children.get(0).set(i, Children.get(0).get(j));
-                        Children.get(0).set(j, Ca);
-                        break;
+                // Verify an solve repeating values
+                if (Children.get(0).contains(Ca)) {
+                    for (int j = 0 ; j < i ; j++) {
+                        if (Children.get(0).get(j) == Ca) {
+                            if (Children.get(0).contains(Pb.get(j))) {
+                                while (Children.get(0).contains(Ca)) {
+                                    Ca = 1 + (int)(Math.random() * total);
+                                }
+                            }
+                            else {
+                                Ca = Pb.get(j);
+                            }
+                            break;
+                        }
                     }
                 }
-            }
-            if (Children.get(1).contains(Cb)) {
-                for (int j = 0 ; j < i ; j++) {
-                    if (Children.get(1).get(j) == Cb) {
-                        Children.get(1).set(i, Children.get(1).get(j));
-                        Children.get(1).set(j, Cb);
-                        break;
+                if (Children.get(1).contains(Cb)) {
+                    for (int j = 0 ; j < i ; j++) {
+                        if (Children.get(1).get(j) == Cb) {
+                            if (Children.get(1).contains(Pa.get(j))) {
+                                while (Children.get(1).contains(Cb)) {
+                                    Cb = 1 + (int)(Math.random() * total);
+                                }
+                            }
+                            else {
+                                Cb = Pa.get(j);
+                            }
+                            break;
+                        }
                     }
                 }
+
+                // Add new values
+                Children.get(0).add(Ca);
+                Children.get(1).add(Cb);
+
             }
 
         }
@@ -965,7 +992,7 @@ public class Alg {
         double[][] timeLongitude = new double[debris.length][debris.length];
         for (int d1 = 0 ; d1 < debris.length ; d1++) {
             for (int d2 = 0 ; d2 < debris.length ; d2++) {
-                // Since this matrix is simetric, there is no need to calculate repeating values
+                // Since this matrix is simetric, there is no need to calculate repeating values                
                 if (d1 <= d2) {
                     // Step 1: Inclination Correction = Accelerate until mean inclination, then Slowdown (same as Accelerate time)
                     timeLatitude[d1][d2] = 2 * Position2Time(Math.abs(debris[d1][0] - debris[d2][0]), orbitalAccel);
