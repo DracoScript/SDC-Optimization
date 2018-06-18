@@ -28,6 +28,7 @@ print ''
 
 sa_gen = []
 sa_best = []
+sa_sol = []
 sa_timer = []
 
 
@@ -44,6 +45,7 @@ for file_name in onlyfiles:
 
     gen = []
     best = []
+    sol = "";
     timer = []
 
     for line in data:
@@ -55,12 +57,14 @@ for file_name in onlyfiles:
             best.append(-aux[1])
         else:
             best.append(aux[1])
+        sol = aux[2]
 
     # Store in Simulated Annealing lists
     if (file_name.find('_SA.stat') > 0):
 
         sa_gen.append(gen)
         sa_best.append(best)
+        sa_sol.append(sol)
         sa_timer.append(timer)
 
 
@@ -94,7 +98,7 @@ plt.plot(sa_gen[sa_fit], sa_best[sa_fit], '-', color='blue', alpha=0.75, linewid
 plt.ylim(0, sa_mean * 2)
 plt.xlabel('generation')
 plt.ylabel('fitness of best solution (days)')
-leg = plt.legend(['Simulated Annealing'])
+leg = plt.legend(['SA'])
 leg.legendHandles[0].set_color('blue')
 leg.legendHandles[0].set_alpha(1)
 
@@ -104,7 +108,7 @@ plt.subplot(2,2,2)
 plt.ylim(0, sa_mean * 2)
 box = plt.boxplot(sa_best[:,-1], vert=True, patch_artist=True, widths=0.5)
 box['boxes'][0].set_facecolor('lightblue')
-leg = plt.legend(['Simulated Annealing'])
+leg = plt.legend(['SA'])
 leg.legendHandles[0].set_marker('s')
 leg.legendHandles[0].set_color('lightblue')
 
@@ -117,20 +121,20 @@ for i in range(len(sa_timer)):
 plt.plot(sa_gen[sa_fit], sa_timer[sa_fit], '-', color='white', alpha=1, linewidth=5)
 plt.plot(sa_gen[sa_fit], sa_timer[sa_fit], '-', color='blue', alpha=0.75, linewidth=3)
 # Plot details
-plt.ylim(0, (sa_meant * 2))
+plt.ylim(0, sa_meant * 2)
 plt.xlabel('generation')
 plt.ylabel('time spent (ns)')
-leg = plt.legend(['Simulated Annealing'])
+leg = plt.legend(['SA'])
 leg.legendHandles[0].set_color('blue')
 leg.legendHandles[0].set_alpha(1)
 
 # PLOT Timer Statistics
 plt.subplot(2,2,4)
 # Plot details
-plt.ylim(0, (sa_meant * 2))
+plt.ylim(0, sa_meant *2)
 box = plt.boxplot(sa_timer[:,-1], vert=True, patch_artist=True, widths=0.5)
 box['boxes'][0].set_facecolor('lightblue')
-leg = plt.legend(['Simulated Annealing'])
+leg = plt.legend(['SA'])
 leg.legendHandles[0].set_marker('s')
 leg.legendHandles[0].set_color('lightblue')
 
@@ -139,7 +143,7 @@ print ''
 print '>>> RESULTS - Mission Duration (days) <<<'
 print ''
 print 'Simulated Annealing:'
-print '    Best Solution      = '+str(sa_best[sa_fit][-1])
+print '    Best Solution      = '+str(sa_best[sa_fit][-1])+" "+sa_sol[sa_fit]
 print '    Mean of Solutions  = '+str(sa_mean)+" ["+str(sa_min)+"-"+str(sa_max)+"]"
 print '    Standard Deviation = '+str(sa_std)
 print ''
@@ -153,7 +157,7 @@ print '    Standard Deviation = '+str(sa_stdt)
 print ''
 
 # PLOT Save
-plt.savefig(mypath+'plot.png')
+plt.savefig(mypath[0:-1]+'_plot.png')
 
 # PLOT Show
 #plt.show()

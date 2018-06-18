@@ -40,6 +40,7 @@ public class Alg {
         List<String> algorithm = new ArrayList<String>();
         double alpha = 0.99;
         int loop = 1;
+        int tweakType = -1;
         int popsize = 10;
         int elitesize = 2;
         double mp = 0.1;
@@ -161,6 +162,16 @@ public class Alg {
                 }
             }
 
+            // SA - Tweak Type
+            if (arg.equals("-w") || arg.equals("--tweak")) {
+                if (argpos < args.length)
+                    tweakType = Integer.parseInt(args[argpos++]);
+                else {
+                    System.err.println("\ntype of tweak not defined (-w number | --tweak number)\n");
+                    TerminateWithHelp();
+                }
+            }
+
             // GA - Population Size
             if (arg.equals("-p") || arg.equals("--popsize")) {
                 if (argpos < args.length)
@@ -256,7 +267,7 @@ public class Alg {
                 // Verify which algorithm to run
                 if (A.equals("SA")) {
                     // Simulated Annealing
-                    SA(args, alpha, loop);
+                    SA(args, alpha, loop, tweakType);
                 }
                 else if (A.equals("GA")) {
                     // Genetic Algorithm
@@ -322,6 +333,7 @@ public class Alg {
                           +"\n"
                           +"    -t, --temperature double    0.99  [SA only] temperature decay rate\n"
                           +"    -l, --loop           int       1  [SA only] loops/generation\n"
+                          +"    -w, --tweak          int      -1  [SA only] type of tweak\n"
                           +"\n"
                           +"    -p, --popsize        int      10  [GA only] population size\n"
                           +"    -e, --elitesize      int       2  [GA only] amount of elite\n"
@@ -336,7 +348,7 @@ public class Alg {
     /**
      * Simulated Annealing Function
      */
-    public static void SA(String[] args, double alpha, int loop) {
+    public static void SA(String[] args, double alpha, int loop, int tweakType) {
 
         // Header
         if (!noprint) {
@@ -433,7 +445,11 @@ public class Alg {
         do {
 
             // Step 6: Tweak current solution
-            List<Integer> R = Tweak(S, total);
+            List<Integer> R;
+            if (tweakType == -1)
+                R = Tweak(S, total);
+            else
+                R = TweakImprove(S, Ks, total, tweakType);
 
             // Step 7: Verify if tweaked solution must be used instead of the current solution
             int Kr = K(R);
@@ -658,6 +674,54 @@ public class Alg {
         do {
             r = 1 + (int)(Math.random() * total);
         } while (r == R.get(pos));
+
+        // If the tweaked value is already on the solution, switch it
+        if (R.contains(r)) {
+            for (int i = 0 ; i < R.size() ; i++) {
+                if (R.get(i) == r) {
+                    R.set(i, R.get(pos));
+                    break;
+                }
+            }
+        }
+
+        // Tweak the solution with the random value
+        R.set(pos, r);
+
+        return R;
+
+    }
+
+    /**
+     * Tweak Function
+     */
+    public static List<Integer> TweakImprove(List<Integer> R, int Kr, int total, int amount) {
+
+        // Determine where to tweak
+        int pos = (int)(Math.random() * R.size());
+
+        // Find the value to be replaced that minimized the solution
+        List<Integer> T = R;
+        int Kb = Kr;
+        int Kt;
+        int r = pos;
+        for (int i = 1 ; i < C[0].length ; i++) {
+            T.set(pos, i);
+            Kt = K(T);
+            if (Kt < Kb) {
+                r = i;
+                Kb = Kt;
+                if (--amount <= 0)
+                    break;
+            }
+        }
+
+        // Only accept a different value
+        if (r == R.get(pos)) {
+            do {
+                r = 1 + (int)(Math.random() * total);
+            } while (r == R.get(pos));
+        }
 
         // If the tweaked value is already on the solution, switch it
         if (R.contains(r)) {
@@ -1019,13 +1083,24 @@ public class Alg {
                     }
                     else {
                         // Step 3: Motion & Position Correction = Accelerate/Slowdown to reach same speed and position (both directions are checked)
-                        double timeInOrbit = SpeedAndPostion2Time((debris[c][2] - debris[n][2]), (debris[c][3] - debris[n][3]), forwardAccel);
+                        double timeInOrbit = SpeedAndPostion2Time((PositionOverTime(debris[c][2], debris[c][3], d) - PositionOverTime(debris[n][2], debris[n][3], d)), (debris[c][3] - debris[n][3]), forwardAccel);
                         // Step 4: Calculate simulated time cost from current to next position
                         C[d][c][n] = Math.max(Math.max(timeLatitude[c][n], timeLongitude[c][n]), timeInOrbit);
                     }
                 }
             }
         }
+
+    }
+
+    /**
+     * Uniform Motion - Position after Time
+     *  UM Position Formula -> s' = s + v.t
+     */
+    public static double PositionOverTime(double position, double speed, int time) {
+
+        // Ignoring full revolutions
+        return  (position + (speed * time)) % 360;
 
     }
 
